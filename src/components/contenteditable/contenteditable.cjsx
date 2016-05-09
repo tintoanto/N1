@@ -153,7 +153,11 @@ class Contenteditable extends React.Component
         exportedSelection: nextProps.initialSelectionSnapshot
         previousExportedSelection: @innerState.exportedSelection
 
+  componentWillUpdate: =>
+    @_preserveSmartComponents()
+
   componentDidUpdate: =>
+    @_restoreSmartComponents()
     if @_shouldRestoreSelectionOnUpdate()
       @_restoreSelection()
       @_notifyOfSelectionRestoration()
@@ -164,6 +168,7 @@ class Contenteditable extends React.Component
     @setInnerState editableNode: @_editableNode()
 
   componentWillUnmount: =>
+    @_unmountSmartComponents()
     @_mutationObserver.disconnect()
     @_teardownNonMutationListeners()
     @_teardownEditingActionListeners()
@@ -441,6 +446,21 @@ class Contenteditable extends React.Component
     editingFunction = extension[method].bind(extension)
     argsObj = _.extend(argsObj, {methodName: method})
     @atomicEdit(editingFunction, argsObj)
+
+  _preserveSmartComponents: ->
+    @_smartComponentMounts = {}
+    for node in @_editableNode().querySelectorAll(".n1-react-component")
+      @_smartComponentMounts[node.getAttribute('id')] = node
+
+  _restoreSmartComponents: ->
+    editable = @_editableNode()
+    for id, origNode of @_smartComponentMounts
+      node = document.getElementById(id)
+      node.parentNode.replaceChild(origNode, node)
+
+  _unmountSmartComponents: ->
+    for node in @_editableNode().querySelectorAll(".n1-react-component")
+      ReactDOM.unmountComponentAtNode(node)
 
 
   ######################################################################
