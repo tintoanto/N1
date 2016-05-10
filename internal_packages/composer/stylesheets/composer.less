@@ -301,7 +301,6 @@ body.platform-win32 {
 
     div[contenteditable] {
       min-height: @compose-min-height;
-      padding: 20px @spacing-standard 10px @spacing-standard;
     }
   }
 
@@ -447,7 +446,7 @@ body.platform-win32 {
 //////////////////////////////////
 //        Smart Components      //
 //////////////////////////////////
-.overlayed-components {
+.overlaid-components {
   position: absolute;
   top: 0;
   left: 0;
@@ -455,4 +454,8 @@ body.platform-win32 {
   height: 0;
   overflow: visible;
   z-index: 10;
+}
+img.n1-overlaid-component-anchor-container {
+  display: block;
+  border: 0;
 }

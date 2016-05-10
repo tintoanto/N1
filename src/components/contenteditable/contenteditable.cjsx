@@ -16,8 +16,9 @@ MouseService = require './mouse-service'
 DOMNormalizer = require './dom-normalizer'
 ClipboardService = require './clipboard-service'
 BlockquoteManager = require './blockquote-manager'
-OverlayedComponentStore = require('./overlayed-component-store').default
+OverlaidComponents = require('./overlaid-components').default
 ToolbarButtonManager = require './toolbar-button-manager'
+OverlaidComponentStore = require('./overlaid-component-store').default
 EmphasisFormattingExtension = require './emphasis-formatting-extension'
 ParagraphFormattingExtension = require './paragraph-formatting-extension'
 
@@ -122,7 +123,7 @@ class Contenteditable extends React.Component
 
   constructor: (@props) ->
     @state = {
-      mountedIds: OverlayedComponentStore.mountedIds()
+      overlaidRects: OverlaidComponentStore.getOverlaidComponentRects()
     }
     @innerState = {
       dragging: false
@@ -139,11 +140,11 @@ class Contenteditable extends React.Component
 
   componentDidMount: =>
     @setInnerState editableNode: @_editableNode()
+    @_restoreOverlayAnchors()
+    @_overlaySub = OverlaidComponentStore.listen(this._onOverlaidChange)
     @_setupNonMutationListeners()
     @_setupEditingActionListeners()
     @_mutationObserver.observe(@_editableNode(), @_mutationConfig())
-    @_restoreOverlayedComponents()
-    @_smartUsub = OverlayedComponentStore.listen(@_onOverlayedComponentStoreChange)
 
   # When we have a composition event in progress, we should not update
   # because otherwise our composition event will be blown away.
@@ -158,11 +159,8 @@ class Contenteditable extends React.Component
         exportedSelection: nextProps.initialSelectionSnapshot
         previousExportedSelection: @innerState.exportedSelection
 
-  # componentWillUpdate: =>
-  #   @_preserveOverlayedComponents()
-
   componentDidUpdate: =>
-    @_restoreOverlayedComponents()
+    @_restoreOverlayAnchors()
     if @_shouldRestoreSelectionOnUpdate()
       @_restoreSelection()
       @_notifyOfSelectionRestoration()
@@ -173,12 +171,12 @@ class Contenteditable extends React.Component
     @setInnerState editableNode: @_editableNode()
 
   componentWillUnmount: =>
-    # @_unmountOverlayedComponents()
+    # @_unmountOverlaidComponents()
     @_mutationObserver.disconnect()
     @_teardownNonMutationListeners()
     @_teardownEditingActionListeners()
     @_teardownServices()
-    @_smartUsub()
+    @_overlaySub()
 
   setInnerState: (innerState={}) =>
     return if _.isMatch(@innerState, innerState)
@@ -204,6 +202,14 @@ class Contenteditable extends React.Component
   ############################## Render ################################
   ######################################################################
 
+  _contenteditablePadding: ->
+    return {
+      paddingLeft: 14,
+      paddingTop: 20,
+      paddingRight: 14,
+      paddingBottom: 10,
+    }
+
   render: =>
     <KeyCommandsRegion className="contenteditable-container"
                        localHandlers={@_keymapHandlers()}>
@@ -214,10 +220,11 @@ class Contenteditable extends React.Component
            contentEditable
            spellCheck={false}
            placeholder={@props.placeholder}
+           style={@_contenteditablePadding()}
            dangerouslySetInnerHTML={__html: @props.value}
            {...@_eventHandlers()}></div>
 
-      {@_renderOverlayedComponents()}
+      <OverlaidComponents ref="overlaidComponents" padding={@_contenteditablePadding().paddingLeft}/>
     </KeyCommandsRegion>
 
   _renderFloatingToolbar: ->
@@ -226,26 +233,6 @@ class Contenteditable extends React.Component
         ref="toolbarController"
         atomicEdit={@atomicEdit}
         extensions={@_extensions()} />
-
-  _renderOverlayedComponents: ->
-    els = []
-    for id in @state.mountedIds
-      rect = OverlayedComponentStore.getAnchorRect(id)
-      if not rect then throw new Error("No mounted rect for #{id}")
-      style={left: rect.left, top: rect.top, position: "relative"}
-
-      data = OverlayedComponentStore.getOverlayedComponent(id)
-      if not data then throw new Error("No registered component for #{id}")
-      {component, props} = data
-
-      wrap = (
-        <div className={OverlayedComponentStore.WRAP_CLASS} style={style} data-overlayed-component-id={id}>
-          <component key={id} {...props} />
-        </div>
-      )
-
-      els.push(wrap)
-    return <div ref="overlayedComponents" className="overlayed-components">{els}</div>
 
   _editableNode: =>
     ReactDOM.findDOMNode(@refs.contenteditable)
@@ -475,57 +462,68 @@ class Contenteditable extends React.Component
     argsObj = _.extend(argsObj, {methodName: method})
     @atomicEdit(editingFunction, argsObj)
 
-  # _preserveOverlayedComponents: ->
-  #   @_overlayedComponentMounts = {}
+  # _preserveOverlaidComponents: ->
+  #   @_overlaidComponentMounts = {}
   #   for node in @_editableNode().querySelectorAll(".n1-react-component")
-  #     @_overlayedComponentMounts[node.getAttribute('id')] = node
+  #     @_overlaidComponentMounts[node.getAttribute('id')] = node
 
-  _onOverlayedComponentStoreChange: =>
-    @setState(mountedIds: OverlayedComponentStore.mountedIds())
+  _onOverlaidChange: =>
+    overlaidRects = OverlaidComponentStore.getOverlaidComponentRects()
+    if not _.isEqual(overlaidRects, @state.overlaidRects)
+      @setState(overlaidRects: overlaidRects)
 
-  _restoreOverlayedComponents: ->
-    containers = @_editableNode()
-      .querySelectorAll(".#{OverlayedComponentStore.ANCHOR_CLASS}")
+  _restoreOverlayAnchors: ->
+    anchors = @_editableNode()
+      .querySelectorAll(".#{OverlaidComponentStore.ANCHOR_CLASS}")
 
-    renderedComponentsById = {}
-    for renderedComponent in ReactDOM.findDOMNode(@refs.overlayedComponents).querySelectorAll(".#{OverlayedComponentStore.WRAP_CLASS}")
-      renderedComponentsById[renderedComponent.dataset.overlayedComponentId] = renderedComponent
+    # renderedComponentsById = {}
+    # for renderedComponent in ReactDOM.findDOMNode(@refs.overlaidComponents).querySelectorAll(".#{OverlaidComponentStore.WRAP_CLASS}")
+    #   renderedComponentsById[renderedComponent.dataset.overlayId] = renderedComponent
 
-    mountedIds = []
-    for container in containers
-      id = container.dataset.overlayedComponentId
-      mountedIds.push(id)
-      renderedComponent = renderedComponentsById[id]
-      if renderedComponent
-        {width, height} = renderedComponent.getBoundingClientRect()
-        container.style.width = "#{width}px"
-        container.style.height = "#{height}px"
+    # anchorIds = []
+    # anchorIds.push(anchor.dataset.overlayId) for anchor in anchors
+    #
+      # renderedComponent = renderedComponentsById[id]
+      # if renderedComponent
+      #   {width, height} = renderedComponent.getBoundingClientRect()
+      #   anchor.style.width = "#{width}px"
+      #   anchor.style.height = "#{height}px"
 
-    # newIds = _.difference(mountedIds, @_overlayedComponentIds)
-    # removedIds = _.difference(@_overlayedComponentIds, mountedIds)
+    # newIds = _.difference(anchorIds, @_overlaidComponentIds)
+    # removedIds = _.difference(@_overlaidComponentIds, anchorIds)
 
-    # if Utils.sameValues(mountedIds, @state.mountedIds)
+    # if Utils.sameValues(anchorIds, @state.anchorIds)
     #   return
 
     editableRect = @_editableNode().getBoundingClientRect()
 
-    mountedState = {}
-    for container in containers
-      id = container.dataset.overlayedComponentId
-      rect = container.getBoundingClientRect()
-      left = rect.left - editableRect.left
+    anchorState = {}
+    for anchor in anchors
+      id = anchor.dataset.overlayId
+
+      overlayRect = @state.overlaidRects[id]?.rect
+      if overlayRect
+        # The 2px is to allow for rendering of box-shadow borders which
+        # aren't included in the width.
+        anchor.style.width = "#{overlayRect.width}px"
+        anchor.style.height = "#{overlayRect.height}px"
+
+      rect = anchor.getBoundingClientRect()
+      left = rect.left - editableRect.left - @_contenteditablePadding().paddingLeft
       top = rect.top - editableRect.top
-      mountedState[id] = {left, top}
-      # rect = OverlayedComponentStore.getRect(id)
+
+      anchorState[id] = {left, top}
+
+      # rect = OverlaidComponentStore.getRect(id)
       # if rect
-      #   container.width = rect.width
-      #   container.height = rect.height
-    OverlayedComponentStore.setMountedState(mountedState)
+      #   anchor.width = rect.width
+      #   anchor.height = rect.height
+    OverlaidComponentStore.setAnchorState(anchorState)
 
-    # OverlayedComponentStore.activateOverlayedComponents(newIds)
-    # OverlayedComponentStore.deactivateOverlayedComponents(removedIds)
+    # OverlaidComponentStore.activateOverlaidComponents(newIds)
+    # OverlaidComponentStore.deactivateOverlaidComponents(removedIds)
 
-  # _unmountOverlayedComponents: ->
+  # _unmountOverlaidComponents: ->
   #   for node in @_editableNode().querySelectorAll(".n1-react-component")
   #     ReactDOM.unmountComponentAtNode(node)
 

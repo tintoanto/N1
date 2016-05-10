@@ -1,7 +1,8 @@
 _ = require 'underscore'
+_str = require 'underscore.string'
 {Utils, DOMUtils} = require 'nylas-exports'
 ExtendedSelection = require './extended-selection'
-OverlayedComponentStore = require('./overlayed-component-store').default
+OverlaidComponentStore = require('./overlaid-component-store').default
 
 # An extended interface of execCommand
 #
@@ -71,14 +72,21 @@ class EditorAPI
 
   normalize: -> @rootNode.normalize(); @
 
-  insertOverlayedComponent: (component, props, containerStyles={}) ->
+  insertOverlaidComponent: (component, props, containerStyles={}) ->
     id = Utils.generateTempId()
-    OverlayedComponentStore.registerOverlayedComponent(id, component, props)
+
+    # This decorates the component
+    component = OverlaidComponentStore.registerOverlaidComponent(id, component, props)
+
     styles = ""
     for key, val of containerStyles
       styles += "#{_str.dasherize(key)}: #{val};"
-    className = OverlayedComponentStore.ANCHOR_CLASS
-    el = "<div style='#{styles}' class='#{className}' data-overlayed-component-id=#{id}></div>"
+    className = OverlaidComponentStore.ANCHOR_CLASS
+
+    # Need to give it 1px transparent src to prevent a border that
+    # ignores all CSS attempts to clear it!
+    el = "<img style='#{styles}' class='#{className}' data-overlay-id=#{id} src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7' />"
+
     @insertHTML(el)
 
   ########################################################################
