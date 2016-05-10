@@ -16,6 +16,7 @@ MouseService = require './mouse-service'
 DOMNormalizer = require './dom-normalizer'
 ClipboardService = require './clipboard-service'
 BlockquoteManager = require './blockquote-manager'
+SmartComponentStore = require('./smart-component-store').default
 ToolbarButtonManager = require './toolbar-button-manager'
 EmphasisFormattingExtension = require './emphasis-formatting-extension'
 ParagraphFormattingExtension = require './paragraph-formatting-extension'
@@ -120,7 +121,9 @@ class Contenteditable extends React.Component
   ######################################################################
 
   constructor: (@props) ->
-    @state = {}
+    @state = {
+      mountedIds: SmartComponentStore.mountedIds()
+    }
     @innerState = {
       dragging: false
       doubleDown: false
@@ -139,6 +142,8 @@ class Contenteditable extends React.Component
     @_setupNonMutationListeners()
     @_setupEditingActionListeners()
     @_mutationObserver.observe(@_editableNode(), @_mutationConfig())
+    @_restoreSmartComponents()
+    @_smartUsub = SmartComponentStore.listen(@_onSmartComponentStoreChange)
 
   # When we have a composition event in progress, we should not update
   # because otherwise our composition event will be blown away.
@@ -153,8 +158,8 @@ class Contenteditable extends React.Component
         exportedSelection: nextProps.initialSelectionSnapshot
         previousExportedSelection: @innerState.exportedSelection
 
-  componentWillUpdate: =>
-    @_preserveSmartComponents()
+  # componentWillUpdate: =>
+  #   @_preserveSmartComponents()
 
   componentDidUpdate: =>
     @_restoreSmartComponents()
@@ -168,11 +173,12 @@ class Contenteditable extends React.Component
     @setInnerState editableNode: @_editableNode()
 
   componentWillUnmount: =>
-    @_unmountSmartComponents()
+    # @_unmountSmartComponents()
     @_mutationObserver.disconnect()
     @_teardownNonMutationListeners()
     @_teardownEditingActionListeners()
     @_teardownServices()
+    @_smartUsub()
 
   setInnerState: (innerState={}) =>
     return if _.isMatch(@innerState, innerState)
@@ -210,6 +216,8 @@ class Contenteditable extends React.Component
            placeholder={@props.placeholder}
            dangerouslySetInnerHTML={__html: @props.value}
            {...@_eventHandlers()}></div>
+
+      {@_renderSmartComponents()}
     </KeyCommandsRegion>
 
   _renderFloatingToolbar: ->
@@ -218,6 +226,26 @@ class Contenteditable extends React.Component
         ref="toolbarController"
         atomicEdit={@atomicEdit}
         extensions={@_extensions()} />
+
+  _renderSmartComponents: ->
+    els = []
+    for id in @state.mountedIds
+      rect = SmartComponentStore.getMountedRect(id)
+      if not rect then throw new Error("No mounted rect for #{id}")
+      style={left: rect.left, top: rect.top, position: "relative"}
+
+      data = SmartComponentStore.getComponent(id)
+      if not data then throw new Error("No registered component for #{id}")
+      {component, props} = data
+
+      wrap = (
+        <div className={SmartComponentStore.WRAP_CLASS} style={style} data-smart-component-id={id}>
+          <component key={id} {...props} />
+        </div>
+      )
+
+      els.push(wrap)
+    return <div ref="smartComponents" className="smart-components">{els}</div>
 
   _editableNode: =>
     ReactDOM.findDOMNode(@refs.contenteditable)
@@ -447,20 +475,59 @@ class Contenteditable extends React.Component
     argsObj = _.extend(argsObj, {methodName: method})
     @atomicEdit(editingFunction, argsObj)
 
-  _preserveSmartComponents: ->
-    @_smartComponentMounts = {}
-    for node in @_editableNode().querySelectorAll(".n1-react-component")
-      @_smartComponentMounts[node.getAttribute('id')] = node
+  # _preserveSmartComponents: ->
+  #   @_smartComponentMounts = {}
+  #   for node in @_editableNode().querySelectorAll(".n1-react-component")
+  #     @_smartComponentMounts[node.getAttribute('id')] = node
+
+  _onSmartComponentStoreChange: =>
+    @setState(mountedIds: SmartComponentStore.mountedIds())
 
   _restoreSmartComponents: ->
-    editable = @_editableNode()
-    for id, origNode of @_smartComponentMounts
-      node = document.getElementById(id)
-      node.parentNode.replaceChild(origNode, node)
+    containers = @_editableNode()
+      .querySelectorAll(".#{SmartComponentStore.ANCHOR_CLASS}")
 
-  _unmountSmartComponents: ->
-    for node in @_editableNode().querySelectorAll(".n1-react-component")
-      ReactDOM.unmountComponentAtNode(node)
+    renderedComponentsById = {}
+    for renderedComponent in ReactDOM.findDOMNode(@refs.smartComponents).querySelectorAll(".#{SmartComponentStore.WRAP_CLASS}")
+      renderedComponentsById[renderedComponent.dataset.smartComponentId] = renderedComponent
+
+    mountedIds = []
+    for container in containers
+      id = container.dataset.smartComponentId
+      mountedIds.push(id)
+      renderedComponent = renderedComponentsById[id]
+      if renderedComponent
+        {width, height} = renderedComponent.getBoundingClientRect()
+        container.style.width = "#{width}px"
+        container.style.height = "#{height}px"
+
+    # newIds = _.difference(mountedIds, @_smartComponentIds)
+    # removedIds = _.difference(@_smartComponentIds, mountedIds)
+
+    # if Utils.sameValues(mountedIds, @state.mountedIds)
+    #   return
+
+    editableRect = @_editableNode().getBoundingClientRect()
+
+    mountedState = {}
+    for container in containers
+      id = container.dataset.smartComponentId
+      rect = container.getBoundingClientRect()
+      left = rect.left - editableRect.left
+      top = rect.top - editableRect.top
+      mountedState[id] = {left, top}
+      # rect = SmartComponentStore.getRect(id)
+      # if rect
+      #   container.width = rect.width
+      #   container.height = rect.height
+    SmartComponentStore.setMountedState(mountedState)
+
+    # SmartComponentStore.activateSmartComponents(newIds)
+    # SmartComponentStore.deactivateSmartComponents(removedIds)
+
+  # _unmountSmartComponents: ->
+  #   for node in @_editableNode().querySelectorAll(".n1-react-component")
+  #     ReactDOM.unmountComponentAtNode(node)
 
 
   ######################################################################

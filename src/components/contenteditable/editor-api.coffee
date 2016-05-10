@@ -1,6 +1,7 @@
 _ = require 'underscore'
-{DOMUtils} = require 'nylas-exports'
+{Utils, DOMUtils} = require 'nylas-exports'
 ExtendedSelection = require './extended-selection'
+SmartComponentStore = require('./smart-component-store').default
 
 # An extended interface of execCommand
 #
@@ -69,6 +70,16 @@ class EditorAPI
     @_extendedSelection.restoreSelectionByTextIndex(args...); @
 
   normalize: -> @rootNode.normalize(); @
+
+  insertSmartComponent: (component, props, containerStyles={}) ->
+    id = Utils.generateTempId()
+    SmartComponentStore.registerSmartComponent(id, component, props)
+    styles = ""
+    for key, val of containerStyles
+      styles += "#{_str.dasherize(key)}: #{val};"
+    className = SmartComponentStore.ANCHOR_CLASS
+    el = "<div style='#{styles}' class='#{className}' data-smart-component-id=#{id}></div>"
+    @insertHTML(el)
 
   ########################################################################
   ####################### execCommand Delegation #########################
