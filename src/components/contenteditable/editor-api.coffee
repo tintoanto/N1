@@ -1,7 +1,7 @@
 _ = require 'underscore'
 {Utils, DOMUtils} = require 'nylas-exports'
 ExtendedSelection = require './extended-selection'
-SmartComponentStore = require('./smart-component-store').default
+OverlayedComponentStore = require('./overlayed-component-store').default
 
 # An extended interface of execCommand
 #
@@ -71,14 +71,14 @@ class EditorAPI
 
   normalize: -> @rootNode.normalize(); @
 
-  insertSmartComponent: (component, props, containerStyles={}) ->
+  insertOverlayedComponent: (component, props, containerStyles={}) ->
     id = Utils.generateTempId()
-    SmartComponentStore.registerSmartComponent(id, component, props)
+    OverlayedComponentStore.registerOverlayedComponent(id, component, props)
     styles = ""
     for key, val of containerStyles
       styles += "#{_str.dasherize(key)}: #{val};"
-    className = SmartComponentStore.ANCHOR_CLASS
-    el = "<div style='#{styles}' class='#{className}' data-smart-component-id=#{id}></div>"
+    className = OverlayedComponentStore.ANCHOR_CLASS
+    el = "<div style='#{styles}' class='#{className}' data-overlayed-component-id=#{id}></div>"
     @insertHTML(el)
 
   ########################################################################

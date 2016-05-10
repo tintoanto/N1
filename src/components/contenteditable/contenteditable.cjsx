@@ -16,7 +16,7 @@ MouseService = require './mouse-service'
 DOMNormalizer = require './dom-normalizer'
 ClipboardService = require './clipboard-service'
 BlockquoteManager = require './blockquote-manager'
-SmartComponentStore = require('./smart-component-store').default
+OverlayedComponentStore = require('./overlayed-component-store').default
 ToolbarButtonManager = require './toolbar-button-manager'
 EmphasisFormattingExtension = require './emphasis-formatting-extension'
 ParagraphFormattingExtension = require './paragraph-formatting-extension'
@@ -122,7 +122,7 @@ class Contenteditable extends React.Component
 
   constructor: (@props) ->
     @state = {
-      mountedIds: SmartComponentStore.mountedIds()
+      mountedIds: OverlayedComponentStore.mountedIds()
     }
     @innerState = {
       dragging: false
@@ -142,8 +142,8 @@ class Contenteditable extends React.Component
     @_setupNonMutationListeners()
     @_setupEditingActionListeners()
     @_mutationObserver.observe(@_editableNode(), @_mutationConfig())
-    @_restoreSmartComponents()
-    @_smartUsub = SmartComponentStore.listen(@_onSmartComponentStoreChange)
+    @_restoreOverlayedComponents()
+    @_smartUsub = OverlayedComponentStore.listen(@_onOverlayedComponentStoreChange)
 
   # When we have a composition event in progress, we should not update
   # because otherwise our composition event will be blown away.
@@ -159,10 +159,10 @@ class Contenteditable extends React.Component
         previousExportedSelection: @innerState.exportedSelection
 
   # componentWillUpdate: =>
-  #   @_preserveSmartComponents()
+  #   @_preserveOverlayedComponents()
 
   componentDidUpdate: =>
-    @_restoreSmartComponents()
+    @_restoreOverlayedComponents()
     if @_shouldRestoreSelectionOnUpdate()
       @_restoreSelection()
       @_notifyOfSelectionRestoration()
@@ -173,7 +173,7 @@ class Contenteditable extends React.Component
     @setInnerState editableNode: @_editableNode()
 
   componentWillUnmount: =>
-    # @_unmountSmartComponents()
+    # @_unmountOverlayedComponents()
     @_mutationObserver.disconnect()
     @_teardownNonMutationListeners()
     @_teardownEditingActionListeners()
@@ -217,7 +217,7 @@ class Contenteditable extends React.Component
            dangerouslySetInnerHTML={__html: @props.value}
            {...@_eventHandlers()}></div>
 
-      {@_renderSmartComponents()}
+      {@_renderOverlayedComponents()}
     </KeyCommandsRegion>
 
   _renderFloatingToolbar: ->
@@ -227,25 +227,25 @@ class Contenteditable extends React.Component
         atomicEdit={@atomicEdit}
         extensions={@_extensions()} />
 
-  _renderSmartComponents: ->
+  _renderOverlayedComponents: ->
     els = []
     for id in @state.mountedIds
-      rect = SmartComponentStore.getMountedRect(id)
+      rect = OverlayedComponentStore.getAnchorRect(id)
       if not rect then throw new Error("No mounted rect for #{id}")
       style={left: rect.left, top: rect.top, position: "relative"}
 
-      data = SmartComponentStore.getComponent(id)
+      data = OverlayedComponentStore.getOverlayedComponent(id)
       if not data then throw new Error("No registered component for #{id}")
       {component, props} = data
 
       wrap = (
-        <div className={SmartComponentStore.WRAP_CLASS} style={style} data-smart-component-id={id}>
+        <div className={OverlayedComponentStore.WRAP_CLASS} style={style} data-overlayed-component-id={id}>
           <component key={id} {...props} />
         </div>
       )
 
       els.push(wrap)
-    return <div ref="smartComponents" className="smart-components">{els}</div>
+    return <div ref="overlayedComponents" className="overlayed-components">{els}</div>
 
   _editableNode: =>
     ReactDOM.findDOMNode(@refs.contenteditable)
@@ -475,25 +475,25 @@ class Contenteditable extends React.Component
     argsObj = _.extend(argsObj, {methodName: method})
     @atomicEdit(editingFunction, argsObj)
 
-  # _preserveSmartComponents: ->
-  #   @_smartComponentMounts = {}
+  # _preserveOverlayedComponents: ->
+  #   @_overlayedComponentMounts = {}
   #   for node in @_editableNode().querySelectorAll(".n1-react-component")
-  #     @_smartComponentMounts[node.getAttribute('id')] = node
+  #     @_overlayedComponentMounts[node.getAttribute('id')] = node
 
-  _onSmartComponentStoreChange: =>
-    @setState(mountedIds: SmartComponentStore.mountedIds())
+  _onOverlayedComponentStoreChange: =>
+    @setState(mountedIds: OverlayedComponentStore.mountedIds())
 
-  _restoreSmartComponents: ->
+  _restoreOverlayedComponents: ->
     containers = @_editableNode()
-      .querySelectorAll(".#{SmartComponentStore.ANCHOR_CLASS}")
+      .querySelectorAll(".#{OverlayedComponentStore.ANCHOR_CLASS}")
 
     renderedComponentsById = {}
-    for renderedComponent in ReactDOM.findDOMNode(@refs.smartComponents).querySelectorAll(".#{SmartComponentStore.WRAP_CLASS}")
-      renderedComponentsById[renderedComponent.dataset.smartComponentId] = renderedComponent
+    for renderedComponent in ReactDOM.findDOMNode(@refs.overlayedComponents).querySelectorAll(".#{OverlayedComponentStore.WRAP_CLASS}")
+      renderedComponentsById[renderedComponent.dataset.overlayedComponentId] = renderedComponent
 
     mountedIds = []
     for container in containers
-      id = container.dataset.smartComponentId
+      id = container.dataset.overlayedComponentId
       mountedIds.push(id)
       renderedComponent = renderedComponentsById[id]
       if renderedComponent
@@ -501,8 +501,8 @@ class Contenteditable extends React.Component
         container.style.width = "#{width}px"
         container.style.height = "#{height}px"
 
-    # newIds = _.difference(mountedIds, @_smartComponentIds)
-    # removedIds = _.difference(@_smartComponentIds, mountedIds)
+    # newIds = _.difference(mountedIds, @_overlayedComponentIds)
+    # removedIds = _.difference(@_overlayedComponentIds, mountedIds)
 
     # if Utils.sameValues(mountedIds, @state.mountedIds)
     #   return
@@ -511,21 +511,21 @@ class Contenteditable extends React.Component
 
     mountedState = {}
     for container in containers
-      id = container.dataset.smartComponentId
+      id = container.dataset.overlayedComponentId
       rect = container.getBoundingClientRect()
       left = rect.left - editableRect.left
       top = rect.top - editableRect.top
       mountedState[id] = {left, top}
-      # rect = SmartComponentStore.getRect(id)
+      # rect = OverlayedComponentStore.getRect(id)
       # if rect
       #   container.width = rect.width
       #   container.height = rect.height
-    SmartComponentStore.setMountedState(mountedState)
+    OverlayedComponentStore.setMountedState(mountedState)
 
-    # SmartComponentStore.activateSmartComponents(newIds)
-    # SmartComponentStore.deactivateSmartComponents(removedIds)
+    # OverlayedComponentStore.activateOverlayedComponents(newIds)
+    # OverlayedComponentStore.deactivateOverlayedComponents(removedIds)
 
-  # _unmountSmartComponents: ->
+  # _unmountOverlayedComponents: ->
   #   for node in @_editableNode().querySelectorAll(".n1-react-component")
   #     ReactDOM.unmountComponentAtNode(node)
 
