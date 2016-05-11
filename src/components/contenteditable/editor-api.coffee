@@ -76,7 +76,7 @@ class EditorAPI
     id = Utils.generateTempId()
 
     # This decorates the component
-    component = OverlaidComponentStore.registerOverlaidComponent(id, component, props)
+    OverlaidComponentStore.registerOverlaidComponent(id, component, props)
 
     styles = ""
     for key, val of containerStyles

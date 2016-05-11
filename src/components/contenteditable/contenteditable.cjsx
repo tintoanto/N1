@@ -470,7 +470,7 @@ class Contenteditable extends React.Component
   _onOverlaidChange: =>
     overlaidRects = OverlaidComponentStore.getOverlaidComponentRects()
     if not _.isEqual(overlaidRects, @state.overlaidRects)
-      @setState(overlaidRects: overlaidRects)
+      @setState(overlaidRects: _.clone(overlaidRects))
 
   _restoreOverlayAnchors: ->
     anchors = @_editableNode()

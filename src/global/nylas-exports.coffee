@@ -135,6 +135,10 @@ class NylasExports
   @lazyLoadAndRegisterStore "FocusedPerspectiveStore", 'focused-perspective-store'
   @lazyLoadAndRegisterStore "SearchableComponentStore", 'searchable-component-store'
 
+  # Decorators
+  @lazyLoad "InflatesDraftClientId", 'decorators/inflates-draft-client-id'
+  @lazyLoad "ListenToChanges", 'decorators/listen-to-changes'
+
   # Extensions
   @lazyLoad "ExtensionRegistry", 'extension-registry'
   @lazyLoad "ComposerExtension", 'extensions/composer-extension'

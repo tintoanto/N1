@@ -1,5 +1,7 @@
 import React from 'react';
-import {DraftStore, Actions, Utils} from 'nylas-exports';
+import DraftStore from '../flux/stores/draft-store'
+import Actions from '../flux/actions'
+import Utils from '../flux/models/utils'
 
 function InflatesDraftClientId(ComposedComponent) {
   return class extends ComposedComponent {
