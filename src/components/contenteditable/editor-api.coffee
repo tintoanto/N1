@@ -72,22 +72,11 @@ class EditorAPI
 
   normalize: -> @rootNode.normalize(); @
 
-  insertOverlaidComponent: (component, props, containerStyles={}) ->
-    id = Utils.generateTempId()
-
-    # This decorates the component
+  insertOverlaidComponent: (id, component, props) ->
+    # Does nothing if already exists. Also decorates the component
     OverlaidComponentStore.registerOverlaidComponent(id, component, props)
-
-    styles = ""
-    for key, val of containerStyles
-      styles += "#{_str.dasherize(key)}: #{val};"
-    className = OverlaidComponentStore.ANCHOR_CLASS
-
-    # Need to give it 1px transparent src to prevent a border that
-    # ignores all CSS attempts to clear it!
-    el = "<img style='#{styles}' class='#{className}' data-overlay-id=#{id} src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7' />"
-
-    @insertHTML(el)
+    return if @rootNode.querySelector("img[data-overlay-id=#{id}]")
+    @insertHTML(OverlaidComponentStore.buildAnchorTag(id))
 
   ########################################################################
   ####################### execCommand Delegation #########################

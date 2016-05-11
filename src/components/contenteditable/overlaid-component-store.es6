@@ -26,7 +26,17 @@ class OverlaidComponentStore extends NylasStore {
     this.triggerSoon = _.debounce(this.trigger, 10)
   }
 
+  // Need to give it 1px transparent src to prevent a border that
+  // ignores all CSS attempts to clear it!
+  buildAnchorTag(id) {
+    return `<img class="${this.ANCHOR_CLASS}" data-overlay-id="${id}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">`
+  }
+
   registerOverlaidComponent = (id, component, props) => {
+    if (this._overlaidComponents[id]) {
+      return
+    }
+
     const decoratedComponent = ListenToChanges(component);
     const extendedProps = Object.assign(props, {
       onMutated: ({rect}) => { this._onUpdateRect(id, rect) },
@@ -38,73 +48,21 @@ class OverlaidComponentStore extends NylasStore {
     }
     // We don't trigger here since we wait for the DOM to update and
     // refresh us via setAnchorState
-    return decoratedComponent
+  }
+
+
+  // TODO: Need proper unregistration scheme. We want the components to stick
+  // around in case you cut and then paste much later. Will likely add a hooke
+  // when a draft is destroyed. TODO
+  // https://paper.dropbox.com/doc/Composer-Overlaid-Components-FoZrF0cFggzSUZirZ9MNo
+  unregisterOverlaidComponent = () => {
+    return
   }
 
   _onUpdateRect(id, rect) {
     this._overlaidComponents[id].rect = _.clone(rect);
     this.triggerSoon()
   }
-
-  // The Anchors in the Contenteditable need to update whenever an
-  // overlaid component updates (and changes its size). We decorate
-  // the overlaid component to listen to its changes.
-  // decorateComponent(id, component) {
-  //   const newComponent = ListenToChanges(component)
-  //
-  //   const didMount = component.prototype.componentDidMount || (() => {})
-  //   // const didUpdate = component.prototype.componentDidUpdate || (() => {})
-  //   const willUnmount = component.prototype.componentWillUnmount || (() => {})
-  //
-  //   const store = this;
-  //
-  //   const updateRect = (itmId, itemNode) => {
-  //     const rect = itemNode.getBoundingClientRect();
-  //     store._overlaidComponents[itmId].rect = rect
-  //     store.triggerSoon()
-  //   }
-  //
-  //   // We need the binding context of the function to be the instance of
-  //   // the component
-  //   const didMountFn = function componentDidMount(...args) {
-  //     const itemNode = ReactDOM.findDOMNode(this)
-  //
-  //     // We need to use a mutation observer because it's possible for the
-  //     // component to change its height without ever making a state
-  //     // change. Furthermore if a sub component makes a state change, the
-  //     // parent-level componentDidUpdate won't fire anyway.
-  //     const mutationObserver = new MutationObserver(() => {
-  //       updateRect(id, itemNode)
-  //     })
-  //
-  //     mutationObserver.observe(itemNode, MUTATION_CONFIG)
-  //     store._overlaidComponents[id].observer = mutationObserver
-  //
-  //     store.triggerSoon()
-  //     return didMount.apply(this, args)
-  //   }
-  //   //
-  //   // const didUpdateFn = function componentDidUpdate(...args) {
-  //   //   const rect = ReactDOM.findDOMNode(this).getBoundingClientRect();
-  //   //   store.getOverlaidComponent(id).rect = rect
-  //   //   store.triggerSoon()
-  //   //   return didUpdate.apply(this, args)
-  //   // }
-  //
-  //   const willUnmountFn = function componentWillUnmount(...args) {
-  //     delete store._overlaidComponents[id].rect
-  //     const observer = store._overlaidComponents[id].observer
-  //     observer.disconnect()
-  //     delete store._overlaidComponents[id].observer
-  //     return willUnmount.apply(this, args)
-  //   }
-  //
-  //   component.prototype.componentDidMount = didMountFn;
-  //   // component.prototype.componentDidUpdate = didUpdateFn;
-  //   component.prototype.componentWillUnmount = willUnmountFn;
-  //
-  //   return component
-  // }
 
   getOverlaidComponent(id) {
     return this._overlaidComponents[id]
@@ -132,10 +90,6 @@ class OverlaidComponentStore extends NylasStore {
     return Object.keys(this._mountedAnchorRects);
   }
 
-  // mountedAnchorRects() {
-  //   return this._mountedAnchorRects
-  // }
-
   setAnchorState(mountedState) {
     const oldIds = Object.keys(this._mountedAnchorRects)
     const removedIds = _.difference(oldIds, Object.keys(mountedState))
@@ -148,18 +102,6 @@ class OverlaidComponentStore extends NylasStore {
 
     this.trigger();
   }
-
-  // mountOverlaidComponent(id) {
-  //   this._mountedAnchorRects[id] = this._overlaidComponents[id]
-  // }
-  //
-  // unmountOverlaidComponent(id) {
-  //   delete this._mountedAnchorRects[id]
-  // }
-
-  // unregisterOverlaidComponent = (id) => {
-  //   delete this._overlaidComponents[id]
-  // }
 }
 const store = new OverlaidComponentStore();
 export default store

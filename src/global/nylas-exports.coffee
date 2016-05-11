@@ -134,6 +134,7 @@ class NylasExports
   @lazyLoadAndRegisterStore "TaskQueueStatusStore", 'task-queue-status-store'
   @lazyLoadAndRegisterStore "FocusedPerspectiveStore", 'focused-perspective-store'
   @lazyLoadAndRegisterStore "SearchableComponentStore", 'searchable-component-store'
+  @lazyLoad "OverlaidComponentStore", 'components/contenteditable/overlaid-component-store'
 
   # Decorators
   @lazyLoad "InflatesDraftClientId", 'decorators/inflates-draft-client-id'
