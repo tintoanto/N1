@@ -19,6 +19,7 @@ BlockquoteManager = require './blockquote-manager'
 OverlaidComponents = require('./overlaid-components').default
 ToolbarButtonManager = require './toolbar-button-manager'
 OverlaidComponentStore = require('./overlaid-component-store').default
+OverlaidComponentExtension = require('./overlaid-component-extension').default
 EmphasisFormattingExtension = require './emphasis-formatting-extension'
 ParagraphFormattingExtension = require './paragraph-formatting-extension'
 
@@ -71,6 +72,7 @@ class Contenteditable extends React.Component
   coreServices: [MouseService, ClipboardService]
 
   coreExtensions: [
+    OverlaidComponentExtension
     ToolbarButtonManager
     ListManager
     TabManager
@@ -301,7 +303,7 @@ class Contenteditable extends React.Component
             @atomicEdit(callback, {actionArg})
           ))
       catch error
-        NylasEnv.emitError(error)
+        NylasEnv.reportError(error)
 
   _teardownEditingActionListeners: =>
     for editingActionUnsubscriber in @editingActionUnsubscribers

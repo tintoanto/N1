@@ -17,7 +17,9 @@ class OverlaidComponentStore extends NylasStore {
 
   // The "Wrap" is the container we place the component in. It's
   // absolutely positioned on top of the "Anchor"
-  WRAP_CLASS = "n1-overlaid-component-wrap"
+  WRAP_CLASS = "n1-overlaid-component-wrap";
+
+  IMG_SRC = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
   constructor() {
     super();
@@ -29,7 +31,7 @@ class OverlaidComponentStore extends NylasStore {
   // Need to give it 1px transparent src to prevent a border that
   // ignores all CSS attempts to clear it!
   buildAnchorTag(id) {
-    return `<img class="${this.ANCHOR_CLASS}" data-overlay-id="${id}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">`
+    return `<img class="${this.ANCHOR_CLASS}" data-overlay-id="${id}" src="${this.IMG_SRC}">`
   }
 
   registerOverlaidComponent = (id, component, props) => {
