@@ -72,11 +72,18 @@ class EditorAPI
 
   normalize: -> @rootNode.normalize(); @
 
-  insertOverlaidComponent: (id, component, props) ->
-    # Does nothing if already exists. Also decorates the component
-    OverlaidComponentStore.registerOverlaidComponent(id, component, props)
-    return if @rootNode.querySelector("img[data-overlay-id=#{id}]")
-    @insertHTML(OverlaidComponentStore.buildAnchorTag(id))
+  insert: (val, options={}) ->
+    if val instanceof React.Component
+      id = OverlaidComponentStore.registerOverlaidElement(val)
+      @insertHTML(OverlaidComponentStore.buildAnchorTag(id), options)
+    else if typeof val is "string"
+      @insertHTML(val, options)
+    else throw new Error("Can't insert: #{val}")
+
+    # # Does nothing if already exists. Also decorates the component
+    # OverlaidComponentStore.registerOverlaidComponent(id, component, props)
+    # return if @rootNode.querySelector("img[data-overlay-id=#{id}]")
+    # @insertHTML(OverlaidComponentStore.buildAnchorTag(id))
 
   ########################################################################
   ####################### execCommand Delegation #########################

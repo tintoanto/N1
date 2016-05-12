@@ -1,27 +1,56 @@
 import _ from 'underscore'
 import React from 'react'
+import ReactDOM from 'react-dom'
 import OverlaidComponentStore from './overlaid-component-store'
+
+const MUTATION_CONFIG = {
+  subtree: true,
+  childList: true,
+  attributes: true,
+  characterData: true,
+  attributeOldValue: true,
+  characterDataOldValue: true,
+}
 
 export default class OverlaidComponents extends React.Component {
   static displayName = "OverlaidComponents";
 
   static propTypes = {
-    padding: React.PropTypes.number,
+    children: React.PropTypes.node,
   }
 
   constructor(props) {
     super(props);
     this.state = {
-      anchorRects: OverlaidComponentStore.getAnchorRects(),
+      anchorRects: {},
     }
+    this.observeOverlays = new MutationObserver(this._onOverlaysMutated)
+    this.observeChildren = new MutationObserver(this._onChildrenMutated)
   }
 
   componentDidMount() {
+    this.observer.observe(
+      ReactDOM.findDOMNode(this.refs.overlaidComponents),
+      MUTATION_CONFIG
+    )
     this.unsub = OverlaidComponentStore.listen(this._onAnchorsChange)
   }
 
+  componentDidUpdate() {
+
+  }
+
   componentWillUnmount() {
+    this.observer.disconnect()
     this.unsub()
+  }
+
+  _onOverlaysMutated = (mutations = []) => {
+
+  }
+
+  _onChildrenMutated = (mutations = []) => {
+
   }
 
   _onAnchorsChange = () => {
@@ -31,7 +60,7 @@ export default class OverlaidComponents extends React.Component {
     }
   }
 
-  render() {
+  _renderOverlaidComponents() {
     const els = [];
     for (const id of Object.keys(this.state.anchorRects)) {
       const rect = this.state.anchorRects[id];
@@ -59,6 +88,17 @@ export default class OverlaidComponents extends React.Component {
       paddingTop: 0,
       paddingBottom: 0,
     }
-    return <div style={padding} className="overlaid-components">{els}</div>
+    return (
+      <div style={padding} ref="overlaidComponents" className="overlaid-components">
+        {els}
+      </div>
+    )
+  }
+
+  render() {
+    return ([
+      this.props.children,
+      this._renderOverlaidComponents(),
+    ])
   }
 }

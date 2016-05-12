@@ -21,6 +21,7 @@ import {
   TabGroupRegion,
   InjectedComponent,
   KeyCommandsRegion,
+  OverlaidComponents,
   InjectedComponentSet,
 } from 'nylas-component-kit';
 
@@ -166,7 +167,7 @@ export default class ComposerView extends React.Component {
   _renderBodyRegions() {
     return (
       <span ref="composerBodyWrap">
-        {this._renderEditor()}
+        <OverlaidComponents>{this._renderEditor()}</OverlaidComponents>
         {this._renderQuotedTextControl()}
         {this._renderAttachments()}
       </span>

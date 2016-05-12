@@ -16,10 +16,7 @@ MouseService = require './mouse-service'
 DOMNormalizer = require './dom-normalizer'
 ClipboardService = require './clipboard-service'
 BlockquoteManager = require './blockquote-manager'
-OverlaidComponents = require('./overlaid-components').default
 ToolbarButtonManager = require './toolbar-button-manager'
-OverlaidComponentStore = require('./overlaid-component-store').default
-OverlaidComponentExtension = require('./overlaid-component-extension').default
 EmphasisFormattingExtension = require './emphasis-formatting-extension'
 ParagraphFormattingExtension = require './paragraph-formatting-extension'
 
@@ -72,7 +69,6 @@ class Contenteditable extends React.Component
   coreServices: [MouseService, ClipboardService]
 
   coreExtensions: [
-    OverlaidComponentExtension
     ToolbarButtonManager
     ListManager
     TabManager
@@ -124,9 +120,6 @@ class Contenteditable extends React.Component
   ######################################################################
 
   constructor: (@props) ->
-    @state = {
-      overlaidRects: OverlaidComponentStore.getOverlaidComponentRects()
-    }
     @innerState = {
       dragging: false
       doubleDown: false
@@ -142,8 +135,10 @@ class Contenteditable extends React.Component
 
   componentDidMount: =>
     @setInnerState editableNode: @_editableNode()
-    @_restoreOverlayAnchors()
-    @_overlaySub = OverlaidComponentStore.listen(this._onOverlaidChange)
+
+    # @_overlaidRects = {}
+    # @_overlayUnsub = OverlaidComponentStore.listen(this._onOverlaidChange)
+
     @_setupNonMutationListeners()
     @_setupEditingActionListeners()
     @_mutationObserver.observe(@_editableNode(), @_mutationConfig())
@@ -162,7 +157,6 @@ class Contenteditable extends React.Component
         previousExportedSelection: @innerState.exportedSelection
 
   componentDidUpdate: =>
-    @_restoreOverlayAnchors()
     if @_shouldRestoreSelectionOnUpdate()
       @_restoreSelection()
       @_notifyOfSelectionRestoration()
@@ -177,7 +171,7 @@ class Contenteditable extends React.Component
     @_teardownNonMutationListeners()
     @_teardownEditingActionListeners()
     @_teardownServices()
-    @_overlaySub()
+    @_overlayUnsub()
 
   setInnerState: (innerState={}) =>
     return if _.isMatch(@innerState, innerState)
@@ -203,13 +197,12 @@ class Contenteditable extends React.Component
   ############################## Render ################################
   ######################################################################
 
-  _contenteditablePadding: ->
-    return {
-      paddingLeft: 14,
-      paddingTop: 20,
-      paddingRight: 14,
-      paddingBottom: 10,
-    }
+  CONTENTEDITABLE_PADDING: {
+    paddingLeft: 14,
+    paddingTop: 20,
+    paddingRight: 14,
+    paddingBottom: 10,
+  }
 
   render: =>
     <KeyCommandsRegion className="contenteditable-container"
@@ -221,11 +214,9 @@ class Contenteditable extends React.Component
            contentEditable
            spellCheck={false}
            placeholder={@props.placeholder}
-           style={@_contenteditablePadding()}
+           style={@CONTENTEDITABLE_PADDING}
            dangerouslySetInnerHTML={__html: @props.value}
            {...@_eventHandlers()}></div>
-
-      <OverlaidComponents ref="overlaidComponents" padding={@_contenteditablePadding().paddingLeft}/>
     </KeyCommandsRegion>
 
   _renderFloatingToolbar: ->
@@ -463,35 +454,17 @@ class Contenteditable extends React.Component
     argsObj = _.extend(argsObj, {methodName: method})
     @atomicEdit(editingFunction, argsObj)
 
-  _onOverlaidChange: =>
-    overlaidRects = OverlaidComponentStore.getOverlaidComponentRects()
-    if not _.isEqual(overlaidRects, @state.overlaidRects)
-      @setState(overlaidRects: _.clone(overlaidRects))
-
-  _restoreOverlayAnchors: ->
-    anchors = @_editableNode()
-      .querySelectorAll(".#{OverlaidComponentStore.ANCHOR_CLASS}")
-
-    editableRect = @_editableNode().getBoundingClientRect()
-
-    anchorState = {}
-    for anchor in anchors
-      id = anchor.dataset.overlayId
-
-      overlayRect = @state.overlaidRects[id]?.rect
-      if overlayRect
-        # The 2px is to allow for rendering of box-shadow borders which
-        # aren't included in the width.
-        anchor.style.width = "#{overlayRect.width}px"
-        anchor.style.height = "#{overlayRect.height}px"
-
-      rect = anchor.getBoundingClientRect()
-      left = rect.left - editableRect.left - @_contenteditablePadding().paddingLeft
-      top = rect.top - editableRect.top
-
-      anchorState[id] = {left, top}
-
-    OverlaidComponentStore.setAnchorState(anchorState)
+  # _onOverlaidChange: =>
+  #   overlaidRects = OverlaidComponentStore.getOverlaidComponentRects()
+  #   if not _.isEqual(overlaidRects, @_overlaidRects)
+  #     @_overlaidRects = _.clone(overlaidRects)
+  #     # We fake an `onDOMMutated` event because while OverlaidComponents look
+  #     # like they're part of the contenteditable, they're actually in a sister
+  #     # component and outside the scope of our natural DOM Mutation listener.
+  #     # This will cause our Extensions to run, which includes the
+  #     # OverlaidComponentExtension. This will make sure the anchor tags are
+  #     # correct and where they need to be.
+  #     @_onDOMMutated(["OVERLAID_COMPONENTS_UPDATED"])
 
 
   ######################################################################
