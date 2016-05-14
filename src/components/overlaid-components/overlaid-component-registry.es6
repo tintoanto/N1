@@ -1,5 +1,7 @@
 import _ from 'underscore'
 import NylasStore from 'nylas-store'
+import {Utils} from 'nylas-exports'
+import {buildAnchorTag} from './anchor-helpers'
 // import ReactDOM from 'react-dom'
 
 // import {ListenToChanges} from 'nylas-exports'
@@ -8,18 +10,10 @@ import NylasStore from 'nylas-store'
  *
  * If the Contenteditable detects new smart component tags, it'll update the store.
  */
-class OverlaidComponentStore extends NylasStore {
-
-  // The "Anchor" is the element we place in the actual contenteditable
-  // component to keep track of where we should overlay the main
-  // component.
-  // ANCHOR_CLASS = "n1-overlaid-component-anchor-container";
+class OverlaidComponentRegistry extends NylasStore {
 
   // The "Wrap" is the container we place the component in. It's
   // absolutely positioned on top of the "Anchor"
-  // WRAP_CLASS = "n1-overlaid-component-wrap";
-
-  // IMG_SRC = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
   constructor() {
     super();
@@ -32,14 +26,14 @@ class OverlaidComponentStore extends NylasStore {
 
   registerOverlaidElement(val) {
     const id = Utils.generateTempId();
-    this._overlaidElements[id] = val
+    this._overlaidElements[id] = val;
+    return id
   }
 
-  // // Need to give it 1px transparent src to prevent a border that
-  // // ignores all CSS attempts to clear it!
-  // buildAnchorTag(id) {
-  //   return `<img class="${this.ANCHOR_CLASS}" data-overlay-id="${id}" src="${this.IMG_SRC}">`
-  // }
+  buildAnchorTag(id) {
+    return buildAnchorTag(id)
+  }
+
   //
   // registerOverlaidComponent = (id, component, props) => {
   //   if (this._overlaidComponents[id]) {
@@ -112,5 +106,5 @@ class OverlaidComponentStore extends NylasStore {
   //   this.trigger();
   // }
 }
-const store = new OverlaidComponentStore();
+const store = new OverlaidComponentRegistry();
 export default store

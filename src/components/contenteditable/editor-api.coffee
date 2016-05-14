@@ -2,7 +2,7 @@ _ = require 'underscore'
 _str = require 'underscore.string'
 {Utils, DOMUtils} = require 'nylas-exports'
 ExtendedSelection = require './extended-selection'
-OverlaidComponentStore = require('./overlaid-component-store').default
+OverlaidComponentRegistry = require('./overlaid-component-registry').default
 
 # An extended interface of execCommand
 #
@@ -74,16 +74,17 @@ class EditorAPI
 
   insert: (val, options={}) ->
     if val instanceof React.Component
-      id = OverlaidComponentStore.registerOverlaidElement(val)
-      @insertHTML(OverlaidComponentStore.buildAnchorTag(id), options)
+      id = OverlaidComponentRegistry.registerOverlaidElement(val)
+      anchorTag = OverlaidComponentRegistry.buildAnchorTag(id)
+      @insertHTML(anchorTag, options)
     else if typeof val is "string"
       @insertHTML(val, options)
     else throw new Error("Can't insert: #{val}")
 
     # # Does nothing if already exists. Also decorates the component
-    # OverlaidComponentStore.registerOverlaidComponent(id, component, props)
+    # OverlaidComponentRegistry.registerOverlaidComponent(id, component, props)
     # return if @rootNode.querySelector("img[data-overlay-id=#{id}]")
-    # @insertHTML(OverlaidComponentStore.buildAnchorTag(id))
+    # @insertHTML(OverlaidComponentRegistry.buildAnchorTag(id))
 
   ########################################################################
   ####################### execCommand Delegation #########################

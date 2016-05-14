@@ -137,7 +137,7 @@ class Contenteditable extends React.Component
     @setInnerState editableNode: @_editableNode()
 
     # @_overlaidRects = {}
-    # @_overlayUnsub = OverlaidComponentStore.listen(this._onOverlaidChange)
+    # @_overlayUnsub = OverlaidComponentRegistry.listen(this._onOverlaidChange)
 
     @_setupNonMutationListeners()
     @_setupEditingActionListeners()
@@ -455,7 +455,7 @@ class Contenteditable extends React.Component
     @atomicEdit(editingFunction, argsObj)
 
   # _onOverlaidChange: =>
-  #   overlaidRects = OverlaidComponentStore.getOverlaidComponentRects()
+  #   overlaidRects = OverlaidComponentRegistry.getOverlaidComponentRects()
   #   if not _.isEqual(overlaidRects, @_overlaidRects)
   #     @_overlaidRects = _.clone(overlaidRects)
   #     # We fake an `onDOMMutated` event because while OverlaidComponents look

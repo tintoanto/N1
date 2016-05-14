@@ -1,5 +1,5 @@
 import {ContenteditableExtension} from 'nylas-exports'
-import OverlaidComponentStore from './overlaid-component-store'
+import OverlaidComponentRegistry from './overlaid-component-registry'
 
 export default class OverlaidComponentExtension extends ContenteditableExtension {
 
@@ -14,17 +14,17 @@ export default class OverlaidComponentExtension extends ContenteditableExtension
    * our 1px transparent gif.
    */
   static _fixImgSrc(rootNode) {
-    const cls = OverlaidComponentStore.ANCHOR_CLASS
+    const cls = OverlaidComponentRegistry.ANCHOR_CLASS
     const imgs = Array.from(rootNode.querySelectorAll(`.${cls}`))
     for (const img of imgs) {
-      if (img.getAttribute("src") !== OverlaidComponentStore.IMG_SRC) {
-        img.setAttribute("src", OverlaidComponentStore.IMG_SRC)
+      if (img.getAttribute("src") !== OverlaidComponentRegistry.IMG_SRC) {
+        img.setAttribute("src", OverlaidComponentRegistry.IMG_SRC)
       }
     }
   }
 
   static _restoreOverlayAnchors(rootNode) {
-    const anchors = Array.from(rootNode.querySelectorAll(`.${OverlaidComponentStore.ANCHOR_CLASS}`));
+    const anchors = Array.from(rootNode.querySelectorAll(`.${OverlaidComponentRegistry.ANCHOR_CLASS}`));
 
     if (anchors.length === 0) { return }
 
@@ -34,7 +34,7 @@ export default class OverlaidComponentExtension extends ContenteditableExtension
     for (const anchor of anchors) {
       const id = anchor.dataset.overlayId
 
-      const overlayData = OverlaidComponentStore.getOverlaidComponentRects[id];
+      const overlayData = OverlaidComponentRegistry.getOverlaidComponentRects[id];
       if (overlayData && overlayData.rect) {
         anchor.style.width = `${overlayData.rect.width}px`
         anchor.style.height = `${overlayData.rect.height}px`
@@ -47,6 +47,6 @@ export default class OverlaidComponentExtension extends ContenteditableExtension
       anchorState[id] = {left, top}
     }
 
-    OverlaidComponentStore.setAnchorState(anchorState)
+    OverlaidComponentRegistry.setAnchorState(anchorState)
   }
 }
