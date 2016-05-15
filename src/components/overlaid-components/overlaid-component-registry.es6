@@ -24,14 +24,19 @@ class OverlaidComponentRegistry extends NylasStore {
     this.triggerSoon = _.debounce(this.trigger, 10)
   }
 
+  getOverlaidElement(id) {
+    return this._overlaidElements[id]
+  }
+
   registerOverlaidElement(val) {
     const id = Utils.generateTempId();
     this._overlaidElements[id] = val;
+    this.triggerSoon()
     return id
   }
 
-  buildAnchorTag(id) {
-    return buildAnchorTag(id)
+  buildAnchorTag(id, props = {}) {
+    return buildAnchorTag(id, props)
   }
 
   //

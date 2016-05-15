@@ -8,6 +8,8 @@ export const IMG_SRC = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAA
 
 // Need to give it 1px transparent src to prevent a border that
 // ignores all CSS attempts to clear it!
-export function buildAnchorTag(id) {
-  return `<img class="${ANCHOR_CLASS}" data-overlay-id="${id}" src="${IMG_SRC}">`
+export function buildAnchorTag(id, props = {}) {
+  let className = ANCHOR_CLASS
+  if (props.className) { className = `${className} ${props.className}` }
+  return `<img class="${className}" data-overlay-id="${id}" src="${IMG_SRC}">`
 }

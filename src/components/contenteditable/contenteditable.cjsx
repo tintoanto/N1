@@ -197,13 +197,6 @@ class Contenteditable extends React.Component
   ############################## Render ################################
   ######################################################################
 
-  CONTENTEDITABLE_PADDING: {
-    paddingLeft: 14,
-    paddingTop: 20,
-    paddingRight: 14,
-    paddingBottom: 10,
-  }
-
   render: =>
     <KeyCommandsRegion className="contenteditable-container"
                        localHandlers={@_keymapHandlers()}>
@@ -214,7 +207,6 @@ class Contenteditable extends React.Component
            contentEditable
            spellCheck={false}
            placeholder={@props.placeholder}
-           style={@CONTENTEDITABLE_PADDING}
            dangerouslySetInnerHTML={__html: @props.value}
            {...@_eventHandlers()}></div>
     </KeyCommandsRegion>

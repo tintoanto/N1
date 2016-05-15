@@ -166,11 +166,11 @@ export default class ComposerView extends React.Component {
 
   _renderBodyRegions() {
     return (
-      <span ref="composerBodyWrap">
+      <div ref="composerBodyWrap" className="composer-body-wrap">
         <OverlaidComponents>{this._renderEditor()}</OverlaidComponents>
         {this._renderQuotedTextControl()}
         {this._renderAttachments()}
-      </span>
+      </div>
     );
   }
 
@@ -402,7 +402,7 @@ export default class ComposerView extends React.Component {
   }
 
   _inFooterRegion(el) {
-    return el.closest && el.closest(".composer-footer-region")
+    return el.closest && el.closest(".overlaid-components")
   }
 
   _onMouseUpComposerBody = (event) => {

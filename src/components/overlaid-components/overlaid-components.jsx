@@ -24,52 +24,110 @@ export default class OverlaidComponents extends React.Component {
 
   constructor(props) {
     super(props);
+    this.state = {
+      anchorRectIds: [],
+    }
     this._anchorRects = {}
     this._overlayRects = {}
-    this.observeOverlays = new MutationObserver(this._onOverlaysMutated)
-    this.observeAnchors = new MutationObserver(this._onAnchorsMutated)
+    this.observeOverlays = new MutationObserver(this._updateAnchors)
+    this.observeAnchors = new MutationObserver(this._updateOverlays)
   }
 
   componentDidMount() {
+    this._updateAnchors();
+    this._updateOverlays();
+    this._setupMutationObservers()
+  }
+
+  componentWillUpdate() {
+    this._teardownMutationObservers()
+  }
+
+  componentDidUpdate() {
+    this._updateAnchors();
+    this._updateOverlays();
+    this._setupMutationObservers();
+  }
+
+  componentWillUnmount() {
+    this._teardownMutationObservers()
+  }
+
+  _setupMutationObservers() {
+    this.observeOverlays.disconnect()
     this.observeOverlays.observe(
       ReactDOM.findDOMNode(this.refs.overlaidComponents),
       MUTATION_CONFIG
     )
+    this.observeAnchors.disconnect()
     this.observeAnchors.observe(
       ReactDOM.findDOMNode(this.refs.anchorContainer),
       MUTATION_CONFIG
     )
-    // this.unsub = OverlaidComponentRegistry.listen(this._onAnchorsChange)
   }
 
-  componentWillUnmount() {
-    this.observer.disconnect()
-    this.unsub()
+  _teardownMutationObservers() {
+    this.observeOverlays.disconnect()
+    this.observeAnchors.disconnect()
   }
 
-  _onOverlaysMutated = () => {
-    this._setRects({
+  _updateAnchors = () => {
+    this._teardownMutationObservers();
+    const lastRects = _.clone(this._overlayRects);
+    this._overlayRects = this._calculateRects({
       root: this.refs.overlaidComponents,
       selector: `.${OverlaidComponents.WRAP_CLASS}`,
       rectRegistry: this._overlayRects,
     })
+    if (_.isEqual(lastRects, this._overlayRects)) { return }
+    this._adjustNodes("anchorContainer", this._overlayRects, ["width", "height"]);
+    this._setupMutationObservers()
   }
 
-  _onAnchorsMutated = () => {
-    this._setRects({
+  _updateOverlays = () => {
+    this._teardownMutationObservers();
+    const lastRects = _.clone(this._anchorRects)
+    this._anchorRects = this._calculateRects({
       root: this.refs.anchorContainer,
       selector: `.${ANCHOR_CLASS}`,
       rectRegistry: this._anchorRects,
     })
+    if (_.isEqual(lastRects, this._anchorRects)) { return }
+    this._adjustNodes("overlaidComponents", this._anchorRects, ["top", "left"]);
+    this._setupMutationObservers();
+    if (!_.isEqual(this.state.anchorRectIds, Object.keys(this._anchorRects))) {
+      this.setState({anchorRectIds: Object.keys(this._anchorRects)})
+    }
   }
 
-  _setRects({root, selector, rectRegistry}) {
+  _adjustNodes(ref, rects, dims) {
+    const root = ReactDOM.findDOMNode(this.refs[ref]);
+    for (const id of Object.keys(rects)) {
+      const node = root.querySelector(`[data-overlay-id=${id}]`);
+      if (!node) { continue }
+      for (const dim of dims) {
+        const dimVal = rects[id][dim];
+        node.style[dim] = `${dimVal}px`
+      }
+    }
+  }
+
+  _calculateRects({root, selector, rectRegistry}) {
     const nodes = Array.from(root.querySelectorAll(selector));
-    if (nodes.length === 0) { return }
+    if (nodes.length === 0) { return rectRegistry }
+    const rootRect = root.getBoundingClientRect();
     for (const node of nodes) {
       const id = node.dataset.overlayId;
-      rectRegistry[id] = node.getBoundingClientRect();
+      const rawRect = node.getBoundingClientRect();
+      const adjustedRect = {
+        left: rawRect.left - rootRect.left,
+        top: rawRect.top - rootRect.top,
+        width: rawRect.width,
+        height: rawRect.height,
+      }
+      rectRegistry[id] = adjustedRect;
     }
+    return rectRegistry
   }
 
   // _onAnchorsChange = () => {
@@ -81,34 +139,29 @@ export default class OverlaidComponents extends React.Component {
 
   _renderOverlaidComponents() {
     const els = [];
-    for (const id of Object.keys(this.state.anchorRects)) {
-      const rect = this.state.anchorRects[id];
+    for (const id of this.state.anchorRectIds) {
+      const rect = this._anchorRects[id];
       if (!rect) { throw new Error("No mounted rect for #{id}") }
 
       const style = {left: rect.left, top: rect.top, position: "relative"}
-      const data = OverlaidComponentRegistry.getOverlaidComponent(id)
+      const element = OverlaidComponentRegistry.getOverlaidElement(id)
 
-      if (!data) { throw new Error("No registered component for #{id}") }
-      const {component, props} = data
-
-      const el = React.createElement(component, Object.assign({ key: id }, props))
+      if (!element) { throw new Error("No registered element for #{id}") }
 
       const wrap = (
-        <div className={OverlaidComponents.WRAP_CLASS} style={style} data-overlay-id={id}>
-          {el}
+        <div
+          className={OverlaidComponents.WRAP_CLASS}
+          style={style}
+          data-overlay-id={id}
+        >
+          {element}
         </div>
       )
 
       els.push(wrap)
     }
-    const padding = {
-      paddingLeft: this.props.padding,
-      paddingRight: this.props.padding,
-      paddingTop: 0,
-      paddingBottom: 0,
-    }
     return (
-      <div style={padding} ref="overlaidComponents" className="overlaid-components">
+      <div ref="overlaidComponents" className="overlaid-components">
         {els}
       </div>
     )
@@ -116,11 +169,11 @@ export default class OverlaidComponents extends React.Component {
 
   render() {
     return (
-      <div>
+      <div className="overlaid-components-wrap" style={{position: "relative"}}>
         <div className="anchor-container" ref="anchorContainer">
-          this.props.children
+          {this.props.children}
         </div>
-        this._renderOverlaidComponents()
+        {this._renderOverlaidComponents()}
       </div>
     )
   }
