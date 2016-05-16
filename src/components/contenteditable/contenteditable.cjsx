@@ -120,6 +120,7 @@ class Contenteditable extends React.Component
   ######################################################################
 
   constructor: (@props) ->
+    @state = {}
     @innerState = {
       dragging: false
       doubleDown: false
@@ -135,10 +136,6 @@ class Contenteditable extends React.Component
 
   componentDidMount: =>
     @setInnerState editableNode: @_editableNode()
-
-    # @_overlaidRects = {}
-    # @_overlayUnsub = OverlaidComponentRegistry.listen(this._onOverlaidChange)
-
     @_setupNonMutationListeners()
     @_setupEditingActionListeners()
     @_mutationObserver.observe(@_editableNode(), @_mutationConfig())
@@ -171,7 +168,6 @@ class Contenteditable extends React.Component
     @_teardownNonMutationListeners()
     @_teardownEditingActionListeners()
     @_teardownServices()
-    @_overlayUnsub()
 
   setInnerState: (innerState={}) =>
     return if _.isMatch(@innerState, innerState)
@@ -445,18 +441,6 @@ class Contenteditable extends React.Component
     editingFunction = extension[method].bind(extension)
     argsObj = _.extend(argsObj, {methodName: method})
     @atomicEdit(editingFunction, argsObj)
-
-  # _onOverlaidChange: =>
-  #   overlaidRects = OverlaidComponentRegistry.getOverlaidComponentRects()
-  #   if not _.isEqual(overlaidRects, @_overlaidRects)
-  #     @_overlaidRects = _.clone(overlaidRects)
-  #     # We fake an `onDOMMutated` event because while OverlaidComponents look
-  #     # like they're part of the contenteditable, they're actually in a sister
-  #     # component and outside the scope of our natural DOM Mutation listener.
-  #     # This will cause our Extensions to run, which includes the
-  #     # OverlaidComponentExtension. This will make sure the anchor tags are
-  #     # correct and where they need to be.
-  #     @_onDOMMutated(["OVERLAID_COMPONENTS_UPDATED"])
 
 
   ######################################################################

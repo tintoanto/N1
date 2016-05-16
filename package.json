@@ -73,7 +73,6 @@
     "semver": "^4.2",
     "source-map-support": "^0.3.2",
     "spellchecker": "3.2.3",
-    "sqlite3": "https://github.com/bengotow/node-sqlite3/archive/bengotow/fts5.tar.gz",
     "temp": "^0.8",
     "underscore": "^1.8",
     "underscore.string": "^3.0",

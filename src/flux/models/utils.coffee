@@ -275,9 +275,6 @@ Utils =
   rectVisibleInRect: (r1, r2) ->
     return !(r2.left > r1.right ||  r2.right < r1.left ||  r2.top > r1.bottom || r2.bottom < r1.top)
 
-  sameValues: (a1, a2) ->
-    _.intersection(a1, a2).length is a1.length is a2.length
-
   isEqualReact: (a, b, options={}) ->
     options.functionsAreEqual = true
     options.ignoreKeys = (options.ignoreKeys ? []).push("clientId")

@@ -1,6 +1,5 @@
 _ = require 'underscore'
-_str = require 'underscore.string'
-{Utils, DOMUtils} = require 'nylas-exports'
+{DOMUtils} = require 'nylas-exports'
 React = require 'react'
 ExtendedSelection = require './extended-selection'
 OverlaidComponentRegistry = require('../overlaid-components/overlaid-component-registry').default

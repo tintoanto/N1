@@ -129,13 +129,6 @@ export default class OverlaidComponents extends React.Component {
     return updatedRegistry
   }
 
-  // _onAnchorsChange = () => {
-  //   const anchorRects = OverlaidComponentRegistry.getAnchorRects();
-  //   if (!_.isEqual(anchorRects, this.state.anchorRects)) {
-  //     this.setState({anchorRects})
-  //   }
-  // }
-
   _renderOverlaidComponents() {
     const els = [];
     for (const id of this.state.anchorRectIds) {

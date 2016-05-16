@@ -138,7 +138,6 @@ class NylasExports
 
   # Decorators
   @lazyLoad "InflatesDraftClientId", 'decorators/inflates-draft-client-id'
-  @lazyLoad "ListenToChanges", 'decorators/listen-to-changes'
 
   # Extensions
   @lazyLoad "ExtensionRegistry", 'extension-registry'
