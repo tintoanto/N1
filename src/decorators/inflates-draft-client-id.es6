@@ -4,7 +4,7 @@ import Actions from '../flux/actions'
 import Utils from '../flux/models/utils'
 
 function InflatesDraftClientId(ComposedComponent) {
-  return class extends ComposedComponent {
+  return class extends React.Component {
     static displayName = ComposedComponent.displayName;
 
     static propTypes = {
