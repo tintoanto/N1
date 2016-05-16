@@ -77,7 +77,6 @@ export default class OverlaidComponents extends React.Component {
     this._overlayRects = this._calculateRects({
       root: this.refs.overlaidComponents,
       selector: `.${OverlaidComponents.WRAP_CLASS}`,
-      rectRegistry: this._overlayRects,
     })
     if (_.isEqual(lastRects, this._overlayRects)) { return }
     this._adjustNodes("anchorContainer", this._overlayRects, ["width", "height"]);
@@ -90,7 +89,6 @@ export default class OverlaidComponents extends React.Component {
     this._anchorRects = this._calculateRects({
       root: this.refs.anchorContainer,
       selector: `.${ANCHOR_CLASS}`,
-      rectRegistry: this._anchorRects,
     })
     if (_.isEqual(lastRects, this._anchorRects)) { return }
     this._adjustNodes("overlaidComponents", this._anchorRects, ["top", "left"]);
@@ -112,9 +110,10 @@ export default class OverlaidComponents extends React.Component {
     }
   }
 
-  _calculateRects({root, selector, rectRegistry}) {
+  _calculateRects({root, selector}) {
+    const updatedRegistry = {}
     const nodes = Array.from(root.querySelectorAll(selector));
-    if (nodes.length === 0) { return rectRegistry }
+    if (nodes.length === 0) { return updatedRegistry }
     const rootRect = root.getBoundingClientRect();
     for (const node of nodes) {
       const id = node.dataset.overlayId;
@@ -125,9 +124,9 @@ export default class OverlaidComponents extends React.Component {
         width: rawRect.width,
         height: rawRect.height,
       }
-      rectRegistry[id] = adjustedRect;
+      updatedRegistry[id] = adjustedRect;
     }
-    return rectRegistry
+    return updatedRegistry
   }
 
   // _onAnchorsChange = () => {
