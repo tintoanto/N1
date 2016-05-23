@@ -1,4 +1,4 @@
-export default class CustomContenteditableComponents {
+class CustomContenteditableComponents {
   constructor() {
     this._components = {}
   }
@@ -18,3 +18,6 @@ export default class CustomContenteditableComponents {
     delete this._components[componentKey]
   }
 }
+
+const store = new CustomContenteditableComponents();
+export default store

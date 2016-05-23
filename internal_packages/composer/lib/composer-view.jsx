@@ -165,9 +165,15 @@ export default class ComposerView extends React.Component {
   }
 
   _renderBodyRegions() {
+    const exposedProps = {
+      draft: this.props.draft,
+      session: this.props.session,
+    }
     return (
       <div ref="composerBodyWrap" className="composer-body-wrap">
-        <OverlaidComponents>{this._renderEditor()}</OverlaidComponents>
+        <OverlaidComponents exposedProps={exposedProps}>
+          {this._renderEditor()}
+        </OverlaidComponents>
         {this._renderQuotedTextControl()}
         {this._renderAttachments()}
       </div>

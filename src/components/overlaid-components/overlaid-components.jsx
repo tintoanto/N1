@@ -165,11 +165,22 @@ export default class OverlaidComponents extends React.Component {
       const style = {left: data.left, top: data.top, position: "relative"}
       const componentData = CustomContenteditableComponents.get(data.componentKey);
 
+      if (!componentData) {
+        // It's possible that the plugin with that will register this
+        // componentKey hasn't loaded yet. This is common in popout
+        // composers where 3rd party plugins are loaded later.
+        continue
+      }
+
       const component = this.props.serialized ? componentData.serialized : componentData.main;
 
       if (!component) { throw new Error(`No registered component for ${data.componentKey}`) }
 
-      const props = JSON.parse(data.componentProps)
+      let props = JSON.parse(data.componentProps);
+
+      props = Object.assign({}, this.props.exposedProps, props);
+
+      const el = React.createElement(component, props)
 
       const wrap = (
         <div
@@ -177,7 +188,7 @@ export default class OverlaidComponents extends React.Component {
           style={style}
           data-overlay-id={id}
         >
-          <component {...props} />
+          {el}
         </div>
       )
 
