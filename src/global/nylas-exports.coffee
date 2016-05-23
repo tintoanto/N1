@@ -135,6 +135,7 @@ class NylasExports
   @lazyLoadAndRegisterStore "FocusedPerspectiveStore", 'focused-perspective-store'
   @lazyLoadAndRegisterStore "SearchableComponentStore", 'searchable-component-store'
   @lazyLoad "OverlaidComponentRegistry", 'components/overlaid-components/overlaid-component-registry'
+  @lazyLoad "CustomContenteditableComponents", 'components/overlaid-components/custom-contenteditable-components'
 
   # Decorators
   @lazyLoad "InflatesDraftClientId", 'decorators/inflates-draft-client-id'
