@@ -19,13 +19,11 @@ export default class OverlaidComponents extends React.Component {
 
   static propTypes = {
     children: React.PropTypes.node,
-    serialized: React.PropTypes.bool,
     exposedProps: React.PropTypes.object,
   }
 
   static defaultProps = {
     children: false,
-    serialized: false,
     exposedProps: {},
   }
 
@@ -47,6 +45,7 @@ export default class OverlaidComponents extends React.Component {
     super(props);
     this.state = {
       anchorRectIds: [],
+      serialized: false,
     }
     this._anchorData = {}
     this._overlayData = {}
@@ -155,6 +154,14 @@ export default class OverlaidComponents extends React.Component {
     return updatedRegistry
   }
 
+  _renderSerializeToggle() {
+    let msg = "Preview as recipient";
+    if (this.state.serialized) {
+      msg = "Return to editor"
+    }
+    return <a className="toggle-serialized" onClick={() => { this.setState({serialized: !this.state.serialized}) }}>{msg}</a>
+  }
+
   _renderOverlaidComponents() {
     const els = [];
     for (const id of this.state.anchorRectIds) {
@@ -171,7 +178,7 @@ export default class OverlaidComponents extends React.Component {
         continue
       }
 
-      const component = this.props.serialized ? componentData.serialized : componentData.main;
+      const component = this.state.serialized ? componentData.serialized : componentData.main;
 
       if (!component) { throw new Error(`No registered component for ${data.componentKey}`) }
 
@@ -193,8 +200,10 @@ export default class OverlaidComponents extends React.Component {
 
       els.push(wrap)
     }
+    const toggle = (els.length > 0) ? this._renderSerializeToggle() : false
     return (
       <div ref="overlaidComponents" className="overlaid-components">
+        {toggle}
         {els}
       </div>
     )
