@@ -31,17 +31,16 @@ export default class OverlaidComponents extends React.Component {
 
   static WRAP_CLASS = "n1-overlaid-component-wrap";
 
-  static buildAnchorTag(componentKey, props = {}) {
-    const id = Utils.generateTempId()
+  static propsToDOMAttr(props) {
+    return JSON.stringify(props).replace(/"/g, "&quot;")
+  }
+
+  static buildAnchorTag(componentKey, props = {}, existingId = null, style = "") {
+    const id = existingId || Utils.generateTempId()
     let className = ANCHOR_CLASS
     if (props.className) { className = `${className} ${props.className}` }
-    const propsStr = JSON.stringify(props);
-    return `<img class='${className}'
-                 src='${IMG_SRC}'
-                 data-overlay-id='${id}'
-                 data-component-props='${propsStr}'
-                 data-component-key='${componentKey}'
-            />`
+    const propsStr = OverlaidComponents.propsToDOMAttr(props);
+    return `<img class="${className}" src="${IMG_SRC}" data-overlay-id="${id}" data-component-props="${propsStr}" data-component-key="${componentKey}" style="${style}">`
   }
 
   constructor(props) {
