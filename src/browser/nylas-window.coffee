@@ -48,6 +48,7 @@ class NylasWindow
     browserWindowOptions =
       show: false
       title: title ? 'Nylas N1'
+      auto-hide-menu-bar: true
       frame: frame
       width: width
       height: height
